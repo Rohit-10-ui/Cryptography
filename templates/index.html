@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cipher Application</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+        }
+
+        .sidebar h1 {
+            color: white;
+            font-size: 20px;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #34495e;
+        }
+
+        .cipher-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .cipher-nav button {
+            padding: 12px 15px;
+            background-color: transparent;
+            border: none;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+            font-size: 14px;
+            color: #bdc3c7;
+            text-align: left;
+            transition: all 0.3s;
+        }
+
+        .cipher-nav button:hover {
+            background-color: #34495e;
+            color: white;
+            border-left-color: #3498db;
+        }
+
+        .cipher-nav button.active {
+            background-color: #34495e;
+            color: white;
+            border-left-color: #3498db;
+            font-weight: bold;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 900px;
+            background-color: white;
+            padding: 30px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .cipher-section {
+            display: none;
+        }
+
+        .cipher-section.active {
+            display: block;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .info-box {
+            background-color: #f9f9f9;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 3px solid #666;
+            font-size: 14px;
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .key-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button.action-btn {
+            flex: 1;
+            padding: 12px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button.action-btn:hover {
+            background-color: #555;
+        }
+
+        button.action-btn:disabled {
+            background-color: #999;
+            cursor: not-allowed;
+        }
+
+        .result-section,
+        .matrix-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            display: none;
+        }
+
+        .result-section.show,
+        .matrix-section.show {
+            display: block;
+        }
+
+        .result-label,
+        .matrix-label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .result-text,
+        .matrix-display {
+            background-color: white;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            word-wrap: break-word;
+            font-family: monospace;
+        }
+
+        .matrix-display {
+            white-space: pre;
+            text-align: center;
+            line-height: 1.8;
+        }
+
+        .error {
+            color: #d32f2f;
+            background-color: #ffebee;
+            padding: 12px;
+            border: 1px solid #ef9a9a;
+            border-radius: 3px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #666;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .layout {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+            }
+
+            .key-inputs {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section-divider {
+            margin: 30px 0;
+            border: none;
+            border-top: 1px solid #ddd;
+        }
+
+        .log-output {
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+            display: none;
+        }
+        .log-output.show {
+            display: block;
+        }
+
+        .euclid-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <div class="sidebar">
+            <h1>Cryptography</h1>
+            <div class="cipher-nav">
+                <button onclick="showCipher('vigenere')" class="active">Vigenère Cipher</button>
+                <button onclick="showCipher('affine')">Affine Cipher</button>
+                <button onclick="showCipher('playfair')">Playfair Cipher</button>
+                <button onclick="showCipher('number-theory')">Number Theory</button>
+                <button onclick="showCipher('des')">DES Cipher</button>
+                <button onclick="showCipher('aes')">AES Cipher</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="container">
+        <!-- VIGENERE CIPHER -->
+        <div id="vigenere" class="cipher-section active">
+            <h2>Vigenère Cipher</h2>
+            
+            <div class="info-box">
+                <strong>About:</strong>
+                Encryption: Ei = (Pi + Ki) mod 26 ------ Decryption: Di = (Ei - Ki) mod 26
+            </div>
+
+            <div class="form-group">
+                <label for="vigenere_message">Message:</label>
+                <textarea id="vigenere_message" placeholder="Enter your message"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="vigenere_key">Key:</label>
+                <input type="text" id="vigenere_key" placeholder="Enter key">
+            </div>
+
+            <div class="button-group">
+                <button class="action-btn" onclick="processVigenere('encrypt')">Encrypt</button>
+                <button class="action-btn" onclick="processVigenere('decrypt')">Decrypt</button>
+            </div>
+
+            <div class="error" id="vigenere_error"></div>
+            <div class="result-section" id="vigenere_result">
+                <div class="result-label" id="vigenere_result_label">Result:</div>
+                <div class="result-text" id="vigenere_result_text"></div>
+            </div>
+        </div>
+
+        <!-- AFFINE CIPHER -->
+        <div id="affine" class="cipher-section">
+            <h2>Affine Cipher</h2>
+            
+            <div class="info-box">
+                <strong>About:</strong>
+                A monoalphabetic substitution cipher using E(x) = (ax + b) mod 26. Key 'a' must be coprime with 26.
+            </div>
+
+            <div class="form-group">
+                <label for="affine_message">Message:</label>
+                <textarea id="affine_message" placeholder="Enter your message"></textarea>
+            </div>
+
+            <div class="key-inputs">
+                <div class="form-group">
+                    <label for="affine_a">Key a:</label>
+                    <input type="number" id="affine_a" placeholder="e.g., 5">
+                </div>
+
+                <div class="form-group">
+                    <label for="affine_b">Key b:</label>
+                    <input type="number" id="affine_b" placeholder="e.g., 8">
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="action-btn" onclick="processAffine('encrypt')">Encrypt</button>
+                <button class="action-btn" onclick="processAffine('decrypt')">Decrypt</button>
+            </div>
+
+            <div class="error" id="affine_error"></div>
+            <div class="result-section" id="affine_result">
+                <div class="result-label" id="affine_result_label">Result:</div>
+                <div class="result-text" id="affine_result_text"></div>
+            </div>
+        </div>
+
+        <!-- PLAYFAIR CIPHER -->
+        <div id="playfair" class="cipher-section">
+            <h2>Playfair Cipher</h2>
+            
+            <div class="info-box">
+                <strong>About:</strong>
+                A digraph substitution cipher using a 5×5 matrix. Letters I and J are treated as the same.
+            </div>
+
+            <div class="form-group">
+                <label for="playfair_message">Message:</label>
+                <textarea id="playfair_message" placeholder="Enter your message"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="playfair_key">Key:</label>
+                    <input type="text" id="playfair_key" placeholder="Enter key">
+            </div>
+
+            <div class="button-group">
+                <button class="action-btn" onclick="processPlayfair('encrypt')">Encrypt</button>
+                <button class="action-btn" onclick="processPlayfair('decrypt')">Decrypt</button>
+            </div>
+
+            <div class="error" id="playfair_error"></div>
+            
+            <div class="matrix-section" id="playfair_matrix">
+                <div class="matrix-label">Generated Matrix:</div>
+                <div class="matrix-display" id="playfair_matrix_display"></div>
+            </div>
+
+            <div class="result-section" id="playfair_result">
+                <div class="result-label" id="playfair_result_label">Result:</div>
+                <div class="result-text" id="playfair_result_text"></div>
+            </div>
+        </div>
+
+        <!-- DES CIPHER -->
+        <div id="des" class="cipher-section">
+            <h2>DES Cipher</h2>
+            
+            <div class="info-box">
+                <strong>About:</strong>
+                The Data Encryption Standard (DES) is a symmetric-key algorithm for the encryption of digital data. It uses a 56-bit key (entered as 8 characters) to encrypt 64-bit blocks of data.
+            </div>
+
+            <div class="form-group">
+                <label for="des_message">Message (8 chars):</label>
+                <input type="text" id="des_message" placeholder="Enter 8-character message" maxlength="8">
+            </div>
+
+            <div class="form-group">
+                <label for="des_key">Key (8 chars):</label>
+                <input type="text" id="des_key" placeholder="Enter 8-character key" maxlength="8">
+            </div>
+
+            <div class="button-group">
+                <button class="action-btn" onclick="processDES('encrypt')">Encrypt</button>
+                <button class="action-btn" onclick="processDES('decrypt')">Decrypt</button>
+            </div>
+
+            <div class="error" id="des_error"></div>
+            <div class="result-section" id="des_result">
+                <div class="result-label" id="des_result_label">Result:</div>
+                <div class="result-text" id="des_result_text"></div>
+                <div class="log-output" id="des_logs"></div>
+            </div>
+        </div>
+
+        <!-- AES CIPHER -->
+        <div id="aes" class="cipher-section">
+            <h2>AES Cipher</h2>
+            
+            <div class="info-box">
+                <strong>About:</strong>
+                The Advanced Encryption Standard (AES) is a symmetric-key algorithm. This implementation uses a 128-bit key (padded/truncated from input) in ECB mode.
+            </div>
+
+            <div class="form-group">
+                <label for="aes_message">Message:</label>
+                <textarea id="aes_message" placeholder="Enter message"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="aes_key">Key:</label>
+                <input type="text" id="aes_key" placeholder="Enter key">
+            </div>
+
+            <div class="button-group">
+                <button class="action-btn" onclick="processAES('encrypt')">Encrypt</button>
+                <button class="action-btn" onclick="processAES('decrypt')">Decrypt</button>
+            </div>
+
+            <div class="error" id="aes_error"></div>
+            <div class="result-section" id="aes_result">
+                <div class="result-label" id="aes_result_label">Result:</div>
+                <div class="result-text" id="aes_result_text"></div>
+                <div class="log-output" id="aes_logs"></div>
+            </div>
+        </div>
+
+        <!-- NUMBER THEORY -->
+        <div id="number-theory" class="cipher-section">
+            <h2>Number Theory Operations</h2>
+            
+            <div class="info-box">
+                <strong>About:</strong>
+                Perform number theory operations: Rabin-Miller primality test, primitive root finding, and Euclid's GCD algorithm.
+            </div>
+
+            <!-- Primality Test Section -->
+            <div class="form-group">
+                <label for="primality_number">Number (Primality Test):</label>
+                <input type="number" id="primality_number" placeholder="Enter a number">
+            </div>
+
+            <div class="button-group">
+                <button class="action-btn" onclick="processPrimality()">Test Primality</button>
+            </div>
+
+            <div class="error" id="primality_error"></div>
+            <div class="result-section" id="primality_result">
+                <div class="result-label" id="primality_result_label">Result:</div>
+                <div class="result-text" id="primality_result_text"></div>
+            </div>
+
+            <hr class="section-divider">
+
+            <!-- Primitive Root Section -->
+            <div class="form-group">
+                <label for="primitive_number">Number (Primitive Root):</label>
+                <input type="number" id="primitive_number" placeholder="Enter a prime number">
+            </div>
+
+            <div class="button-group">
+                <button class="action-btn" onclick="processPrimitiveRoot()">Find Primitive Root</button>
+            </div>
+
+            <div class="error" id="primitive_error"></div>
+            <div class="result-section" id="primitive_result">
+                <div class="result-label" id="primitive_result_label">Result:</div>
+                <div class="result-text" id="primitive_result_text"></div>
+            </div>
+
+            <hr class="section-divider">
+
+            <!-- Euclid's Algorithm Section -->
+            <div class="form-group">
+                <label>Numbers (Euclid's GCD Algorithm):</label>
+                <div class="euclid-inputs">
+                    <div>
+                        <input type="number" id="euclid_number1" placeholder="First number">
+                    </div>
+                    <div>
+                        <input type="number" id="euclid_number2" placeholder="Second number">
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="action-btn" onclick="processEuclid()">Calculate GCD</button>
+            </div>
+
+            <div class="error" id="euclid_error"></div>
+            <div class="result-section" id="euclid_result">
+                <div class="result-label" id="euclid_result_label">Result:</div>
+                <div class="result-text" id="euclid_result_text"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Cipher Application - Educational Purpose Only
+        </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showCipher(cipherName) {
+            // Hide all sections
+            document.querySelectorAll('.cipher-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active from all buttons
+            document.querySelectorAll('.cipher-nav button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(cipherName).classList.add('active');
+            event.target.classList.add('active');
+            
+            // Clear results
+            document.querySelectorAll('.error, .result-section, .matrix-section, .log-output').forEach(el => {
+                el.classList.remove('show');
+            });
+        }
+
+        async function processVigenere(operation) {
+            const message = document.getElementById('vigenere_message').value;
+            const key = document.getElementById('vigenere_key').value;
+            const errorDiv = document.getElementById('vigenere_error');
+            const resultDiv = document.getElementById('vigenere_result');
+            const resultLabel = document.getElementById('vigenere_result_label');
+            const resultText = document.getElementById('vigenere_result_text');
+
+            errorDiv.classList.remove('show');
+            resultDiv.classList.remove('show');
+
+            if (!message.trim() || !key.trim()) {
+                errorDiv.textContent = 'Error: Please enter both message and key.';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            try {
+                const btn = event.target;
+                btn.disabled = true;
+
+                const response = await fetch('/api/vigenere', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message, key, operation})
+                });
+
+                const data = await response.json();
+                btn.disabled = false;
+
+                if (data.success) {
+                    resultLabel.textContent = data.operation + ' Text:';
+                    resultText.textContent = data.result;
+                    resultDiv.classList.add('show');
+                } else {
+                    errorDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    errorDiv.classList.add('show');
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Connection Error: ' + error.message;
+                errorDiv.classList.add('show');
+                event.target.disabled = false;
+            }
+        }
+
+        async function processAffine(operation) {
+            const message = document.getElementById('affine_message').value;
+            const a = document.getElementById('affine_a').value;
+            const b = document.getElementById('affine_b').value;
+            const errorDiv = document.getElementById('affine_error');
+            const resultDiv = document.getElementById('affine_result');
+            const resultLabel = document.getElementById('affine_result_label');
+            const resultText = document.getElementById('affine_result_text');
+
+            errorDiv.classList.remove('show');
+            resultDiv.classList.remove('show');
+
+            if (!message.trim() || !a.trim() || !b.trim()) {
+                errorDiv.textContent = 'Error: Please enter message and both keys.';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            try {
+                const btn = event.target;
+                btn.disabled = true;
+
+                const response = await fetch('/api/affine', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message, a: parseInt(a), b: parseInt(b), operation})
+                });
+
+                const data = await response.json();
+                btn.disabled = false;
+
+                if (data.success) {
+                    resultLabel.textContent = data.operation + ' Text:';
+                    resultText.textContent = data.result;
+                    resultDiv.classList.add('show');
+                } else {
+                    errorDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    errorDiv.classList.add('show');
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Connection Error: ' + error.message;
+                errorDiv.classList.add('show');
+                event.target.disabled = false;
+            }
+        }
+
+        async function processPlayfair(operation) {
+            const message = document.getElementById('playfair_message').value;
+            const key = document.getElementById('playfair_key').value;
+            const errorDiv = document.getElementById('playfair_error');
+            const matrixDiv = document.getElementById('playfair_matrix');
+            const matrixDisplay = document.getElementById('playfair_matrix_display');
+            const resultDiv = document.getElementById('playfair_result');
+            const resultLabel = document.getElementById('playfair_result_label');
+            const resultText = document.getElementById('playfair_result_text');
+
+            errorDiv.classList.remove('show');
+            matrixDiv.classList.remove('show');
+            resultDiv.classList.remove('show');
+
+            if (!message.trim() || !key.trim()) {
+                errorDiv.textContent = 'Error: Please enter both message and key.';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            try {
+                const btn = event.target;
+                btn.disabled = true;
+
+                const response = await fetch('/api/playfair', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message, key, operation})
+                });
+
+                const data = await response.json();
+                btn.disabled = false;
+
+                if (data.success) {
+                    matrixDisplay.textContent = data.matrix;
+                    matrixDiv.classList.add('show');
+                    
+                    resultLabel.textContent = data.operation + ' Text:';
+                    resultText.textContent = data.result;
+                    resultDiv.classList.add('show');
+                } else {
+                    errorDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    errorDiv.classList.add('show');
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Connection Error: ' + error.message;
+                errorDiv.classList.add('show');
+                event.target.disabled = false;
+            }
+        }
+
+        async function processDES(operation) {
+            const message = document.getElementById('des_message').value;
+            const key = document.getElementById('des_key').value;
+            const errorDiv = document.getElementById('des_error');
+            const resultDiv = document.getElementById('des_result');
+            const resultLabel = document.getElementById('des_result_label');
+            const resultText = document.getElementById('des_result_text');
+            const logsDiv = document.getElementById('des_logs');
+
+            errorDiv.classList.remove('show');
+            resultDiv.classList.remove('show');
+            logsDiv.classList.remove('show');
+
+            if (!message || !key) {
+                errorDiv.textContent = 'Error: Please enter both message and key.';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            if (message.length !== 8 || key.length !== 8) {
+                errorDiv.textContent = 'Error: Message and Key must be exactly 8 characters long.';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            try {
+                const btn = event.target;
+                btn.disabled = true;
+
+                const response = await fetch('/api/des', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message, key, operation})
+                });
+
+                const data = await response.json();
+                btn.disabled = false;
+
+                if (data.success) {
+                    resultLabel.textContent = data.operation + ' Text:';
+                    resultText.textContent = data.result;
+                    resultDiv.classList.add('show');
+                    
+                    if (data.logs && data.logs.length > 0) {
+                        logsDiv.textContent = data.logs.join('\n');
+                        logsDiv.classList.add('show');
+                    }
+                } else {
+                    errorDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    errorDiv.classList.add('show');
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Connection Error: ' + error.message;
+                errorDiv.classList.add('show');
+                event.target.disabled = false;
+            }
+        }
+
+        async function processAES(operation) {
+            const message = document.getElementById('aes_message').value;
+            const key = document.getElementById('aes_key').value;
+            const errorDiv = document.getElementById('aes_error');
+            const resultDiv = document.getElementById('aes_result');
+            const resultLabel = document.getElementById('aes_result_label');
+            const resultText = document.getElementById('aes_result_text');
+            const logsDiv = document.getElementById('aes_logs');
+
+            errorDiv.classList.remove('show');
+            resultDiv.classList.remove('show');
+            logsDiv.classList.remove('show');
+
+            if (!message || !key) {
+                errorDiv.textContent = 'Error: Please enter both message and key.';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            try {
+                const btn = event.target;
+                btn.disabled = true;
+
+                const response = await fetch('/api/aes', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message, key, operation})
+                });
+
+                const data = await response.json();
+                btn.disabled = false;
+
+                if (data.success) {
+                    resultLabel.textContent = data.operation + ' Text:';
+                    resultText.textContent = data.result;
+                    resultDiv.classList.add('show');
+
+                    if (data.logs && data.logs.length > 0) {
+                        logsDiv.textContent = data.logs.join('\n');
+                        logsDiv.classList.add('show');
+                    }
+                } else {
+                    errorDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    errorDiv.classList.add('show');
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Connection Error: ' + error.message;
+                errorDiv.classList.add('show');
+                event.target.disabled = false;
+            }
+        }
+
+        // ==================== NUMBER THEORY FUNCTIONS ====================
+
+        async function processPrimality() {
+            const number = document.getElementById('primality_number').value;
+            const errorDiv = document.getElementById('primality_error');
+            const resultDiv = document.getElementById('primality_result');
+            const resultLabel = document.getElementById('primality_result_label');
+            const resultText = document.getElementById('primality_result_text');
+
+            errorDiv.classList.remove('show');
+            resultDiv.classList.remove('show');
+
+            if (!number.trim()) {
+                errorDiv.textContent = 'Error: Please enter a number.';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            try {
+                const btn = event.target;
+                btn.disabled = true;
+
+                const response = await fetch('/api/primality-test', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({number})
+                });
+
+                const data = await response.json();
+                btn.disabled = false;
+
+                if (data.success) {
+                    resultLabel.textContent = 'Primality Test Result:';
+                    resultText.textContent = data.result;
+                    resultDiv.classList.add('show');
+                } else {
+                    errorDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    errorDiv.classList.add('show');
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Connection Error: ' + error.message;
+                errorDiv.classList.add('show');
+                event.target.disabled = false;
+            }
+        }
+
+        async function processPrimitiveRoot() {
+            const number = document.getElementById('primitive_number').value;
+            const errorDiv = document.getElementById('primitive_error');
+            const resultDiv = document.getElementById('primitive_result');
+            const resultLabel = document.getElementById('primitive_result_label');
+            const resultText = document.getElementById('primitive_result_text');
+
+            errorDiv.classList.remove('show');
+            resultDiv.classList.remove('show');
+
+            if (!number.trim()) {
+                errorDiv.textContent = 'Error: Please enter a number.';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            try {
+                const btn = event.target;
+                btn.disabled = true;
+
+                const response = await fetch('/api/primitive-root', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({number})
+                });
+
+                const data = await response.json();
+                btn.disabled = false;
+
+                if (data.success) {
+                    resultLabel.textContent = 'Primitive Root Result:';
+                    resultText.textContent = data.result;
+                    resultDiv.classList.add('show');
+                } else {
+                    errorDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    errorDiv.classList.add('show');
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Connection Error: ' + error.message;
+                errorDiv.classList.add('show');
+                event.target.disabled = false;
+            }
+        }
+
+        async function processEuclid() {
+            const number1 = document.getElementById('euclid_number1').value;
+            const number2 = document.getElementById('euclid_number2').value;
+            const errorDiv = document.getElementById('euclid_error');
+            const resultDiv = document.getElementById('euclid_result');
+            const resultLabel = document.getElementById('euclid_result_label');
+            const resultText = document.getElementById('euclid_result_text');
+
+            errorDiv.classList.remove('show');
+            resultDiv.classList.remove('show');
+
+            if (!number1.trim() || !number2.trim()) {
+                errorDiv.textContent = 'Error: Please enter both numbers.';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            try {
+                const btn = event.target;
+                btn.disabled = true;
+
+                const response = await fetch('/api/euclid', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({number1, number2})
+                });
+
+                const data = await response.json();
+                btn.disabled = false;
+
+                if (data.success) {
+                    resultLabel.textContent = 'Euclid\'s Algorithm Result:';
+                    resultText.textContent = `GCD: ${data.gcd}\nEquation: ${data.equation}`;
+                    resultDiv.classList.add('show');
+                } else {
+                    errorDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    errorDiv.classList.add('show');
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Connection Error: ' + error.message;
+                errorDiv.classList.add('show');
+                event.target.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
