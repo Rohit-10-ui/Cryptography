@@ -250,33 +250,6 @@
                 grid-template-columns: 1fr;
             }
         }
-
-        .section-divider {
-            margin: 30px 0;
-            border: none;
-            border-top: 1px solid #ddd;
-        }
-
-        .log-output {
-            background-color: #f0f0f0;
-            border: 1px solid #ccc;
-            padding: 10px;
-            font-family: monospace;
-            white-space: pre-wrap;
-            max-height: 300px;
-            overflow-y: auto;
-            margin-top: 10px;
-            display: none;
-        }
-        .log-output.show {
-            display: block;
-        }
-
-        .euclid-inputs {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
     </style>
 </head>
 <body>
@@ -287,9 +260,10 @@
                 <button onclick="showCipher('vigenere')" class="active">Vigenère Cipher</button>
                 <button onclick="showCipher('affine')">Affine Cipher</button>
                 <button onclick="showCipher('playfair')">Playfair Cipher</button>
-                <button onclick="showCipher('number-theory')">Number Theory</button>
                 <button onclick="showCipher('des')">DES Cipher</button>
                 <button onclick="showCipher('aes')">AES Cipher</button>
+                <button onclick="showCipher('rsa')">RSA Cipher</button>
+                <button onclick="showCipher('diffie-hellman')">Diffie-Hellman</button>
             </div>
         </div>
 
@@ -301,7 +275,7 @@
             
             <div class="info-box">
                 <strong>About:</strong>
-                Encryption: Ei = (Pi + Ki) mod 26 ------ Decryption: Di = (Ei - Ki) mod 26
+                A polyalphabetic substitution cipher that uses a keyword. Each letter in the key shifts the corresponding letter in the plaintext.
             </div>
 
             <div class="form-group">
@@ -380,7 +354,7 @@
 
             <div class="form-group">
                 <label for="playfair_key">Key:</label>
-                    <input type="text" id="playfair_key" placeholder="Enter key">
+                <input type="text" id="playfair_key" placeholder="Enter key">
             </div>
 
             <div class="button-group">
@@ -465,72 +439,83 @@
             </div>
         </div>
 
-        <!-- NUMBER THEORY -->
-        <div id="number-theory" class="cipher-section">
-            <h2>Number Theory Operations</h2>
+        <!-- RSA CIPHER -->
+        <div id="rsa" class="cipher-section">
+            <h2>RSA Cipher</h2>
             
             <div class="info-box">
                 <strong>About:</strong>
-                Perform number theory operations: Rabin-Miller primality test, primitive root finding, and Euclid's GCD algorithm.
+                RSA is an asymmetric algorithm. It uses a public key (e, n) for encryption and a private key (d, n) for decryption.
+                <br>Enter two primes and a message to see all intermediate calculation steps.
             </div>
 
-            <!-- Primality Test Section -->
+            <div class="key-inputs">
+                <div class="form-group">
+                    <label for="rsa_p">Prime p:</label>
+                    <input type="number" id="rsa_p" placeholder="e.g., 61">
+                </div>
+                <div class="form-group">
+                    <label for="rsa_q">Prime q:</label>
+                    <input type="number" id="rsa_q" placeholder="e.g., 53">
+                </div>
+            </div>
+
             <div class="form-group">
-                <label for="primality_number">Number (Primality Test):</label>
-                <input type="number" id="primality_number" placeholder="Enter a number">
+                <label for="rsa_message">Message (Integer):</label>
+                <input type="number" id="rsa_message" placeholder="Enter integer message (must be < n)">
             </div>
 
             <div class="button-group">
-                <button class="action-btn" onclick="processPrimality()">Test Primality</button>
+                <button class="action-btn" onclick="calculateRSA()">Calculate & Show Steps</button>
             </div>
 
-            <div class="error" id="primality_error"></div>
-            <div class="result-section" id="primality_result">
-                <div class="result-label" id="primality_result_label">Result:</div>
-                <div class="result-text" id="primality_result_text"></div>
+            <div class="error" id="rsa_error"></div>
+            <div class="result-section" id="rsa_result">
+                <div class="result-label" id="rsa_result_label">Intermediate Steps:</div>
+                <div class="result-text" id="rsa_result_text" style="white-space: pre-wrap;"></div>
+            </div>
+        </div>
+
+        <!-- DIFFIE-HELLMAN -->
+        <div id="diffie-hellman" class="cipher-section">
+            <h2>Diffie-Hellman Key Exchange</h2>
+            
+            <div class="info-box">
+                <strong>About:</strong>
+                Diffie-Hellman is a method of securely exchanging cryptographic keys over a public channel.
+                <br>Enter public parameters (p, g) and private keys (a, b) to see the key exchange process.
             </div>
 
-            <hr class="section-divider">
-
-            <!-- Primitive Root Section -->
-            <div class="form-group">
-                <label for="primitive_number">Number (Primitive Root):</label>
-                <input type="number" id="primitive_number" placeholder="Enter a prime number">
+            <div class="key-inputs">
+                <div class="form-group">
+                    <label for="dh_p">Prime Number (p):</label>
+                    <input type="number" id="dh_p" placeholder="e.g., 23">
+                </div>
+                <div class="form-group">
+                    <label for="dh_g">Primitive Root (g):</label>
+                    <input type="number" id="dh_g" placeholder="e.g., 5">
+                </div>
             </div>
 
-            <div class="button-group">
-                <button class="action-btn" onclick="processPrimitiveRoot()">Find Primitive Root</button>
-            </div>
-
-            <div class="error" id="primitive_error"></div>
-            <div class="result-section" id="primitive_result">
-                <div class="result-label" id="primitive_result_label">Result:</div>
-                <div class="result-text" id="primitive_result_text"></div>
-            </div>
-
-            <hr class="section-divider">
-
-            <!-- Euclid's Algorithm Section -->
-            <div class="form-group">
-                <label>Numbers (Euclid's GCD Algorithm):</label>
-                <div class="euclid-inputs">
-                    <div>
-                        <input type="number" id="euclid_number1" placeholder="First number">
-                    </div>
-                    <div>
-                        <input type="number" id="euclid_number2" placeholder="Second number">
-                    </div>
+            <div class="key-inputs">
+                <div class="form-group">
+                    <label for="dh_a">Alice's Private Key (a):</label>
+                    <input type="number" id="dh_a" placeholder="e.g., 6">
+                </div>
+                <div class="form-group">
+                    <label for="dh_b">Bob's Private Key (b):</label>
+                    <input type="number" id="dh_b" placeholder="e.g., 15">
                 </div>
             </div>
 
             <div class="button-group">
-                <button class="action-btn" onclick="processEuclid()">Calculate GCD</button>
+                <button class="action-btn" onclick="calculateDiffieHellman()">Calculate & Show Steps</button>
             </div>
 
-            <div class="error" id="euclid_error"></div>
-            <div class="result-section" id="euclid_result">
-                <div class="result-label" id="euclid_result_label">Result:</div>
-                <div class="result-text" id="euclid_result_text"></div>
+            <div class="error" id="dh_error"></div>
+            <div class="result-section" id="dh_result">
+                <div class="result-label">Intermediate Steps:</div>
+                <div class="result-text" id="dh_result_text" style="white-space: pre-wrap;"></div>
             </div>
         </div>
 
@@ -747,7 +732,7 @@
                     resultLabel.textContent = data.operation + ' Text:';
                     resultText.textContent = data.result;
                     resultDiv.classList.add('show');
-                    
+
                     if (data.logs && data.logs.length > 0) {
                         logsDiv.textContent = data.logs.join('\n');
                         logsDiv.classList.add('show');
@@ -815,138 +800,159 @@
             }
         }
 
-        // ==================== NUMBER THEORY FUNCTIONS ====================
+        async function calculateRSA() {
+            const p = document.getElementById('rsa_p').value;
+            const q = document.getElementById('rsa_q').value;
+            const message = document.getElementById('rsa_message').value;
+            
+            const errorDiv = document.getElementById('rsa_error');
+            const resultDiv = document.getElementById('rsa_result');
+            const resultText = document.getElementById('rsa_result_text');
 
-        async function processPrimality() {
-            const number = document.getElementById('primality_number').value;
-            const errorDiv = document.getElementById('primality_error');
-            const resultDiv = document.getElementById('primality_result');
-            const resultLabel = document.getElementById('primality_result_label');
-            const resultText = document.getElementById('primality_result_text');
-
+            // Clear previous results
             errorDiv.classList.remove('show');
             resultDiv.classList.remove('show');
 
-            if (!number.trim()) {
-                errorDiv.textContent = 'Error: Please enter a number.';
+            // Input validation
+            if (!p || !q || !message) {
+                errorDiv.textContent = 'Error: Please enter p, q, and a message.';
                 errorDiv.classList.add('show');
                 return;
             }
 
-            try {
-                const btn = event.target;
-                btn.disabled = true;
+            const btn = event.target;
+            btn.disabled = true;
+            resultText.textContent = 'Calculating...';
+            resultDiv.classList.add('show');
 
-                const response = await fetch('/api/primality-test', {
+            try {
+                // 1. Generate Keys
+                const keyGenResponse = await fetch('/api/rsa', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({number})
+                    body: JSON.stringify({p, q, operation: 'generate'})
                 });
+                const keyData = await keyGenResponse.json();
 
-                const data = await response.json();
-                btn.disabled = false;
-
-                if (data.success) {
-                    resultLabel.textContent = 'Primality Test Result:';
-                    resultText.textContent = data.result;
-                    resultDiv.classList.add('show');
-                } else {
-                    errorDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
-                    errorDiv.classList.add('show');
+                if (!keyData.success) {
+                    throw new Error(keyData.error || 'Key generation failed.');
                 }
+
+                const n = keyData.public_key.n;
+                const e = keyData.public_key.e;
+                const d = keyData.private_key.d;
+                const phi = (parseInt(p) - 1) * (parseInt(q) - 1);
+
+                if (parseInt(message) >= n) {
+                    throw new Error(`Message (${message}) must be smaller than n (${n}).`);
+                }
+
+                let output = `--- Intermediate Steps ---\n\n`;
+                output += `1. Primes:\n   p = ${p}\n   q = ${q}\n\n`;
+                output += `2. Modulus (n):\n   n = p * q = ${n}\n\n`;
+                output += `3. Euler's Totient (phi):\n   phi = (p-1) * (q-1) = ${phi}\n\n`;
+                output += `4. Public Exponent (e):\n   e = ${e}\n\n`;
+                output += `5. Private Exponent (d):\n   d = ${d}\n\n`;
+                output += `Public Key: (${e}, ${n})\n`;
+                output += `Private Key: (${d}, ${n})\n\n`;
+                output += `--------------------------\n\n`;
+                output += `Original Message: ${message}\n\n`;
+
+                // 2. Encrypt
+                const encryptResponse = await fetch('/api/rsa', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ message: message, key_part1: e, key_part2: n, operation: 'encrypt' })
+                });
+                const encryptData = await encryptResponse.json();
+
+                if (!encryptData.success) { throw new Error(encryptData.error || 'Encryption failed.'); }
+                const cipher = encryptData.result;
+                output += `6. Encryption:\n   Cipher = ${message}^${e} mod ${n} = ${cipher}\n\n`;
+
+                // 3. Decrypt
+                const decryptResponse = await fetch('/api/rsa', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ message: cipher, key_part1: d, key_part2: n, operation: 'decrypt' })
+                });
+                const decryptData = await decryptResponse.json();
+
+                if (!decryptData.success) { throw new Error(decryptData.error || 'Decryption failed.'); }
+                const decrypted = decryptData.result;
+                output += `7. Decryption:\n   Message = ${cipher}^${d} mod ${n} = ${decrypted}\n\n`;
+
+                resultText.textContent = output;
+
             } catch (error) {
-                errorDiv.textContent = 'Connection Error: ' + error.message;
+                errorDiv.textContent = 'Error: ' + error.message;
                 errorDiv.classList.add('show');
-                event.target.disabled = false;
+                resultDiv.classList.remove('show');
+            } finally {
+                btn.disabled = false;
             }
         }
 
-        async function processPrimitiveRoot() {
-            const number = document.getElementById('primitive_number').value;
-            const errorDiv = document.getElementById('primitive_error');
-            const resultDiv = document.getElementById('primitive_result');
-            const resultLabel = document.getElementById('primitive_result_label');
-            const resultText = document.getElementById('primitive_result_text');
+        async function calculateDiffieHellman() {
+            const p = document.getElementById('dh_p').value;
+            const g = document.getElementById('dh_g').value;
+            const a = document.getElementById('dh_a').value;
+            const b = document.getElementById('dh_b').value;
+            
+            const errorDiv = document.getElementById('dh_error');
+            const resultDiv = document.getElementById('dh_result');
+            const resultText = document.getElementById('dh_result_text');
 
             errorDiv.classList.remove('show');
             resultDiv.classList.remove('show');
 
-            if (!number.trim()) {
-                errorDiv.textContent = 'Error: Please enter a number.';
+            if (!p || !g || !a || !b) {
+                errorDiv.textContent = 'Error: Please enter all fields (p, g, a, b).';
                 errorDiv.classList.add('show');
                 return;
             }
 
-            try {
-                const btn = event.target;
-                btn.disabled = true;
+            const btn = event.target;
+            btn.disabled = true;
+            resultText.textContent = 'Calculating...';
+            resultDiv.classList.add('show');
 
-                const response = await fetch('/api/primitive-root', {
+            try {
+                const response = await fetch('/api/diffie-hellman', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({number})
+                    body: JSON.stringify({p, g, a, b})
                 });
 
                 const data = await response.json();
-                btn.disabled = false;
 
-                if (data.success) {
-                    resultLabel.textContent = 'Primitive Root Result:';
-                    resultText.textContent = data.result;
-                    resultDiv.classList.add('show');
-                } else {
-                    errorDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
-                    errorDiv.classList.add('show');
+                if (!data.success) {
+                    throw new Error(data.error || 'Calculation failed.');
                 }
+
+                let output = `=== Diffie-Hellman Key Exchange ===\n\n`;
+                output += `Step 1: Public Parameters\n   Prime (p) = ${data.p}\n   Primitive Root (g) = ${data.g}\n\n`;
+                output += `Step 2: Private Keys\n   Alice's Private Key (a) = ${data.a}\n   Bob's Private Key (b) = ${data.b}\n\n`;
+                
+                output += `Step 3: Public Key Computation\n`;
+                output += `   Alice computes A = g^a mod p\n   A = ${data.g}^${data.a} mod ${data.p} = ${data.A}\n\n`;
+                output += `   Bob computes B = g^b mod p\n   B = ${data.g}^${data.b} mod ${data.p} = ${data.B}\n\n`;
+                
+                output += `Step 4: Exchange Public Keys\n   Alice sends A (${data.A}) to Bob\n   Bob sends B (${data.B}) to Alice\n\n`;
+                
+                output += `Step 5: Shared Secret Computation\n`;
+                output += `   Alice computes K = B^a mod p\n   K = ${data.B}^${data.a} mod ${data.p} = ${data.secret_a}\n\n`;
+                output += `   Bob computes K = A^b mod p\n   K = ${data.A}^${data.b} mod ${data.p} = ${data.secret_b}\n\n`;
+                
+                output += `Step 6: Verification\n   ${data.secret_a === data.secret_b ? 'Key Exchange Successful!' : 'Key Exchange Failed!'}\n   Final Shared Secret: ${data.secret_a}`;
+
+                resultText.textContent = output;
             } catch (error) {
-                errorDiv.textContent = 'Connection Error: ' + error.message;
+                errorDiv.textContent = 'Error: ' + error.message;
                 errorDiv.classList.add('show');
-                event.target.disabled = false;
-            }
-        }
-
-        async function processEuclid() {
-            const number1 = document.getElementById('euclid_number1').value;
-            const number2 = document.getElementById('euclid_number2').value;
-            const errorDiv = document.getElementById('euclid_error');
-            const resultDiv = document.getElementById('euclid_result');
-            const resultLabel = document.getElementById('euclid_result_label');
-            const resultText = document.getElementById('euclid_result_text');
-
-            errorDiv.classList.remove('show');
-            resultDiv.classList.remove('show');
-
-            if (!number1.trim() || !number2.trim()) {
-                errorDiv.textContent = 'Error: Please enter both numbers.';
-                errorDiv.classList.add('show');
-                return;
-            }
-
-            try {
-                const btn = event.target;
-                btn.disabled = true;
-
-                const response = await fetch('/api/euclid', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({number1, number2})
-                });
-
-                const data = await response.json();
+                resultDiv.classList.remove('show');
+            } finally {
                 btn.disabled = false;
-
-                if (data.success) {
-                    resultLabel.textContent = 'Euclid\'s Algorithm Result:';
-                    resultText.textContent = `GCD: ${data.gcd}\nEquation: ${data.equation}`;
-                    resultDiv.classList.add('show');
-                } else {
-                    errorDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
-                    errorDiv.classList.add('show');
-                }
-            } catch (error) {
-                errorDiv.textContent = 'Connection Error: ' + error.message;
-                errorDiv.classList.add('show');
-                event.target.disabled = false;
             }
         }
     </script>

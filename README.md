@@ -167,6 +167,12 @@ Uses a 5×5 matrix generated from a keyword. Encrypts pairs of letters using pos
 ### "ModuleNotFoundError: No module named 'flask'"
 Install Flask using: `pip install flask`
 
+### "Python was not found..."
+This is a Windows-specific error.
+1. Try using `py app.py` instead of `python app.py`.
+2. If that fails, install Python from python.org. **Important:** Check "Add Python to PATH" during installation.
+3. Go to **Settings > Apps > Advanced app settings > App execution aliases** and turn **OFF** the toggles for `python.exe` and `python3.exe`.
+
 ### "Address already in use"
 Another application is using port 5000. Either:
 - Stop the other application

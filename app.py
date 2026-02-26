@@ -477,6 +477,29 @@ def aes_decrypt(ciphertext_hex, key):
     logs.append(f"\nDecrypted Text: {unpadded.decode('utf-8')}")
     return unpadded.decode('utf-8'), logs
 
+# ==================== RSA CIPHER ====================
+def rsa_generate_keys(p, q):
+    """Generate RSA keys from primes p and q"""
+    # Check primality using number_theory module
+    if not number_theory.rabin_miller(p, k=10) or not number_theory.rabin_miller(q, k=10):
+        raise ValueError("Both numbers must be prime")
+    
+    n = p * q
+    phi = (p - 1) * (q - 1)
+    
+    # Choose e (1 < e < phi) such that gcd(e, phi) = 1
+    e = 2
+    while e < phi:
+        if gcd(e, phi) == 1:
+            break
+        e += 1
+    
+    d = mod_inverse(e, phi)
+    if d is None:
+        raise ValueError("Could not generate private key (d)")
+        
+    return {'e': e, 'n': n}, {'d': d, 'n': n}
+
 # ==================== FLASK ROUTES ====================
 @app.route('/')
 def index():
@@ -609,6 +632,100 @@ def api_aes():
             result, logs = aes_decrypt(message, key)
             return jsonify({'success': True, 'result': result, 'logs': logs, 'operation': 'Decrypted'})
     
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/rsa', methods=['POST'])
+def api_rsa():
+    """Handle RSA cipher requests"""
+    try:
+        data = request.get_json()
+        operation = data.get('operation')
+        
+        if operation == 'generate':
+            p = data.get('p')
+            q = data.get('q')
+            if not p or not q:
+                return jsonify({'success': False, 'error': 'Primes p and q are required'})
+            
+            pub, priv = rsa_generate_keys(int(p), int(q))
+            return jsonify({
+                'success': True, 
+                'public_key': pub, 
+                'private_key': priv,
+                'operation': 'Generated Keys'
+            })
+            
+        # Encrypt/Decrypt
+        message = data.get('message')
+        key_part1 = data.get('key_part1') # e or d
+        key_part2 = data.get('key_part2') # n
+        
+        if message is None or key_part1 is None or key_part2 is None:
+             return jsonify({'success': False, 'error': 'Message, Key Exponent, and Modulus n are required'})
+        
+        # RSA operates on integers
+        msg_int = int(message)
+        exp = int(key_part1)
+        mod = int(key_part2)
+        
+        if msg_int >= mod:
+            return jsonify({'success': False, 'error': f'Message ({msg_int}) must be smaller than modulus n ({mod})'})
+
+        result = pow(msg_int, exp, mod)
+        
+        return jsonify({
+            'success': True, 
+            'result': str(result), 
+            'operation': 'Encrypted' if operation == 'encrypt' else 'Decrypted'
+        })
+
+    except ValueError as e:
+        return jsonify({'success': False, 'error': 'Invalid input: ' + str(e)})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/diffie-hellman', methods=['POST'])
+def api_diffie_hellman():
+    """Handle Diffie-Hellman Key Exchange requests"""
+    try:
+        data = request.get_json()
+        p = data.get('p')
+        g = data.get('g')
+        a = data.get('a')
+        b = data.get('b')
+        
+        if not all([p, g, a, b]):
+            return jsonify({'success': False, 'error': 'All fields (p, g, a, b) are required'})
+            
+        p, g, a, b = int(p), int(g), int(a), int(b)
+        
+        # Check if p is prime
+        if not number_theory.rabin_miller(p, k=10):
+            return jsonify({'success': False, 'error': f'The number p ({p}) must be a prime number.'})
+        
+        # Calculate Public Keys
+        # A = g^a mod p
+        A = pow(g, a, p)
+        # B = g^b mod p
+        B = pow(g, b, p)
+        
+        # Calculate Shared Secrets
+        # Alice computes secret = B^a mod p
+        secret_a = pow(B, a, p)
+        # Bob computes secret = A^b mod p
+        secret_b = pow(A, b, p)
+        
+        return jsonify({
+            'success': True,
+            'p': p, 'g': g, 'a': a, 'b': b,
+            'A': A, 'B': B,
+            'secret_a': secret_a,
+            'secret_b': secret_b
+        })
+        
+    except ValueError:
+        return jsonify({'success': False, 'error': 'Invalid input: numbers required'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
