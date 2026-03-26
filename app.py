@@ -834,6 +834,36 @@ def api_euclid():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+# ==================== SHA256 HASHING ====================
+import hashlib
+import struct
+
+def sha256_hash(message):
+    """Calculate SHA256 hash of message using Python's hashlib"""
+    return hashlib.sha256(message.encode('utf-8')).hexdigest()
+
+@app.route('/api/sha256', methods=['POST'])
+def api_sha256():
+    """SHA256 hashing endpoint"""
+    try:
+        data = request.get_json()
+        message = data.get('message', '')
+        
+        if not message:
+            return jsonify({'success': False, 'error': 'Message cannot be empty'})
+        
+        hash_value = sha256_hash(message)
+        
+        return jsonify({
+            'success': True,
+            'message': message,
+            'hash': hash_value,
+            'hash_length': len(hash_value)
+        })
+    
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
