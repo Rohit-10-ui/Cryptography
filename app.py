@@ -864,6 +864,127 @@ def api_sha256():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+# ==================== CMAC (CIPHER-BASED MAC) ====================
+
+def xor_bytes(a, b):
+    """XOR two byte strings"""
+    return bytes(x ^ y for x, y in zip(a, b))
+
+def left_shift(block):
+    """Left shift a 128-bit block by 1"""
+    shifted = int.from_bytes(block, byteorder='big') << 1
+    shifted &= (1 << 128) - 1
+    return shifted.to_bytes(16, byteorder='big')
+
+def generate_subkeys_cmac(key):
+    """Generate CMAC subkeys K1 and K2 from the AES key"""
+    cipher = AES.new(key, AES.MODE_ECB)
+    zero_block = bytes(16)
+    
+    # L = AES(K, 0^128)
+    L = cipher.encrypt(zero_block)
+    
+    # Constant for CMAC
+    Rb = 0x87
+    
+    # K1 generation
+    if (L[0] & 0x80) == 0:
+        K1 = left_shift(L)
+    else:
+        K1 = xor_bytes(left_shift(L), Rb.to_bytes(16, 'big'))
+    
+    # K2 generation
+    if (K1[0] & 0x80) == 0:
+        K2 = left_shift(K1)
+    else:
+        K2 = xor_bytes(left_shift(K1), Rb.to_bytes(16, 'big'))
+    
+    return K1, K2
+
+def cmac_generate(key, message):
+    """Generate CMAC tag for message using key"""
+    cipher = AES.new(key, AES.MODE_ECB)
+    block_size = 16
+    
+    K1, K2 = generate_subkeys_cmac(key)
+    
+    # Process message into blocks
+    if len(message) == 0:
+        n = 1
+        flag = False
+    else:
+        n = (len(message) + block_size - 1) // block_size
+        flag = (len(message) % block_size == 0)
+    
+    blocks = [message[i*block_size:(i+1)*block_size] for i in range(n)]
+    
+    # Process last block
+    if flag:
+        last_block = xor_bytes(blocks[-1], K1)
+    else:
+        # Pad incomplete block with 10^*
+        padded = blocks[-1] + b'\x80' + b'\x00' * (block_size - len(blocks[-1]) - 1)
+        last_block = xor_bytes(padded, K2)
+    
+    # CMAC computation
+    X = bytes(block_size)
+    
+    for i in range(n - 1):
+        Y = xor_bytes(X, blocks[i])
+        X = cipher.encrypt(Y)
+    
+    # Final block
+    Y = xor_bytes(X, last_block)
+    T = cipher.encrypt(Y)
+    
+    return T
+
+@app.route('/api/cmac', methods=['POST'])
+def api_cmac():
+    """Handle CMAC generation and verification"""
+    try:
+        data = request.get_json()
+        message = data.get('message', '')
+        key = data.get('key', '')
+        operation = data.get('operation', 'generate')
+        
+        if not message or not key:
+            return jsonify({'success': False, 'error': 'Message and key are required'})
+        
+        # Encode message and key to bytes
+        message_bytes = message.encode('utf-8')
+        key_bytes = key.encode('utf-8')
+        
+        # Pad or truncate key to 16 bytes (128-bit)
+        if len(key_bytes) < 16:
+            key_bytes = key_bytes.ljust(16, b'\x00')
+        else:
+            key_bytes = key_bytes[:16]
+        
+        if operation == 'generate':
+            # Generate CMAC
+            cmac_tag = cmac_generate(key_bytes, message_bytes)
+            cmac_hex = binascii.hexlify(cmac_tag).decode('utf-8')
+            
+            return jsonify({
+                'success': True,
+                'cmac': cmac_hex,
+                'result': f'CMAC Generated Successfully\n\nMessage: {message}\nKey: {key}\nCMAC: {cmac_hex}'
+            })
+        else:
+            # For verification, we would need the original CMAC tag
+            cmac_tag = cmac_generate(key_bytes, message_bytes)
+            cmac_hex = binascii.hexlify(cmac_tag).decode('utf-8')
+            
+            return jsonify({
+                'success': True,
+                'result': f'CMAC Verification Complete\n\nExpected CMAC: {cmac_hex}\n\nTo verify, compare with the CMAC from the sender.'
+            })
+    
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)

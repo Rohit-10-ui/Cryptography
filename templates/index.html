@@ -265,6 +265,7 @@
                 <button onclick="showCipher('rsa')">RSA Cipher</button>
                 <button onclick="showCipher('diffie-hellman')">Diffie-Hellman</button>
                 <button onclick="showCipher('sha256')">SHA256 Hash</button>
+                <button onclick="showCipher('cmac')">CMAC</button>
             </div>
         </div>
 
@@ -549,6 +550,37 @@
                 <div class="form-group">
                     <label>Hash Length: <span id="sha256_length"></span> characters</label>
                 </div>
+            </div>
+        </div>
+
+        <!-- CMAC -->
+        <div id="cmac" class="cipher-section">
+            <h2>CMAC (Cipher-based Message Authentication Code)</h2>
+            
+            <div class="info-box">
+                <strong>About:</strong>
+                CMAC is a message authentication code based on a symmetric cipher like AES. It provides both authenticity and integrity verification of messages using a shared secret key.
+            </div>
+
+            <div class="form-group">
+                <label for="cmac_message">Message:</label>
+                <textarea id="cmac_message" placeholder="Enter message to authenticate"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="cmac_key">Key:</label>
+                <input type="text" id="cmac_key" placeholder="Enter key">
+            </div>
+
+            <div class="button-group">
+                <button class="action-btn" onclick="processCMAC()">Generate CMAC</button>
+                <button class="action-btn" onclick="verifyCMAC()">Verify CMAC</button>
+            </div>
+
+            <div class="error" id="cmac_error"></div>
+            <div class="result-section" id="cmac_result">
+                <div class="result-label" id="cmac_result_label">CMAC Output:</div>
+                <div class="result-text" id="cmac_result_text" style="font-family: monospace;"></div>
             </div>
         </div>
 
@@ -1034,6 +1066,97 @@
             document.getElementById('sha256_length').textContent = '';
             document.getElementById('sha256_error').classList.remove('show');
             document.getElementById('sha256_result').classList.remove('show');
+        }
+
+        // ==================== CMAC ====================
+        async function processCMAC() {
+            const message = document.getElementById('cmac_message').value;
+            const key = document.getElementById('cmac_key').value;
+            const errorDiv = document.getElementById('cmac_error');
+            const resultDiv = document.getElementById('cmac_result');
+            const resultLabel = document.getElementById('cmac_result_label');
+            const resultText = document.getElementById('cmac_result_text');
+
+            errorDiv.classList.remove('show');
+            resultDiv.classList.remove('show');
+
+            if (!message || !key) {
+                errorDiv.textContent = 'Error: Please enter both message and key.';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            try {
+                const btn = event.target;
+                btn.disabled = true;
+
+                const response = await fetch('/api/cmac', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message, key, operation: 'generate'})
+                });
+
+                const data = await response.json();
+                btn.disabled = false;
+
+                if (data.success) {
+                    resultLabel.textContent = 'CMAC Output:';
+                    resultText.textContent = `Message: ${message}\nKey: ${key}\nCMAC: ${data.cmac}`;
+                    resultDiv.classList.add('show');
+                } else {
+                    errorDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    errorDiv.classList.add('show');
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Connection Error: ' + error.message;
+                errorDiv.classList.add('show');
+                event.target.disabled = false;
+            }
+        }
+
+        async function verifyCMAC() {
+            const message = document.getElementById('cmac_message').value;
+            const key = document.getElementById('cmac_key').value;
+            const errorDiv = document.getElementById('cmac_error');
+            const resultDiv = document.getElementById('cmac_result');
+            const resultLabel = document.getElementById('cmac_result_label');
+            const resultText = document.getElementById('cmac_result_text');
+
+            errorDiv.classList.remove('show');
+            resultDiv.classList.remove('show');
+
+            if (!message || !key) {
+                errorDiv.textContent = 'Error: Please enter both message and key.';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            try {
+                const btn = event.target;
+                btn.disabled = true;
+
+                const response = await fetch('/api/cmac', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message, key, operation: 'verify'})
+                });
+
+                const data = await response.json();
+                btn.disabled = false;
+
+                if (data.success) {
+                    resultLabel.textContent = 'CMAC Verification:';
+                    resultText.textContent = data.result;
+                    resultDiv.classList.add('show');
+                } else {
+                    errorDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    errorDiv.classList.add('show');
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Connection Error: ' + error.message;
+                errorDiv.classList.add('show');
+                event.target.disabled = false;
+            }
         }
     </script>
 </body>
