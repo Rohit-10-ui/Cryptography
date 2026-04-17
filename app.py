@@ -876,13 +876,16 @@ def left_shift(block):
     shifted &= (1 << 128) - 1
     return shifted.to_bytes(16, byteorder='big')
 
-def generate_subkeys_cmac(key):
+def generate_subkeys_cmac(key, steps=None):
     """Generate CMAC subkeys K1 and K2 from the AES key"""
     cipher = AES.new(key, AES.MODE_ECB)
     zero_block = bytes(16)
     
     # L = AES(K, 0^128)
     L = cipher.encrypt(zero_block)
+    if steps is not None:
+        steps.append(f"Step 1: Generate L = AES(K, 0^128)")
+        steps.append(f"  L = {binascii.hexlify(L).decode()}")
     
     # Constant for CMAC
     Rb = 0x87
@@ -890,23 +893,40 @@ def generate_subkeys_cmac(key):
     # K1 generation
     if (L[0] & 0x80) == 0:
         K1 = left_shift(L)
+        if steps is not None:
+            steps.append(f"\nStep 2: Generate K1 (MSB of L = 0)")
+            steps.append(f"  K1 = LeftShift(L) = {binascii.hexlify(K1).decode()}")
     else:
         K1 = xor_bytes(left_shift(L), Rb.to_bytes(16, 'big'))
+        if steps is not None:
+            steps.append(f"\nStep 2: Generate K1 (MSB of L = 1)")
+            steps.append(f"  K1 = LeftShift(L) XOR Rb = {binascii.hexlify(K1).decode()}")
     
     # K2 generation
     if (K1[0] & 0x80) == 0:
         K2 = left_shift(K1)
+        if steps is not None:
+            steps.append(f"\nStep 3: Generate K2 (MSB of K1 = 0)")
+            steps.append(f"  K2 = LeftShift(K1) = {binascii.hexlify(K2).decode()}")
     else:
         K2 = xor_bytes(left_shift(K1), Rb.to_bytes(16, 'big'))
+        if steps is not None:
+            steps.append(f"\nStep 3: Generate K2 (MSB of K1 = 1)")
+            steps.append(f"  K2 = LeftShift(K1) XOR Rb = {binascii.hexlify(K2).decode()}")
     
     return K1, K2
 
-def cmac_generate(key, message):
-    """Generate CMAC tag for message using key"""
+def cmac_generate(key, message, steps=None):
+    """Generate CMAC tag for message using key with intermediate steps"""
     cipher = AES.new(key, AES.MODE_ECB)
     block_size = 16
     
-    K1, K2 = generate_subkeys_cmac(key)
+    if steps is not None:
+        steps.append("=" * 60)
+        steps.append("CMAC GENERATION PROCESS")
+        steps.append("=" * 60)
+    
+    K1, K2 = generate_subkeys_cmac(key, steps)
     
     # Process message into blocks
     if len(message) == 0:
@@ -916,26 +936,53 @@ def cmac_generate(key, message):
         n = (len(message) + block_size - 1) // block_size
         flag = (len(message) % block_size == 0)
     
+    if steps is not None:
+        steps.append(f"\nStep 4: Message Blocking")
+        steps.append(f"  Message Length: {len(message)} bytes")
+        steps.append(f"  Number of Blocks: {n}")
+        steps.append(f"  Last Block Complete: {flag}")
+    
     blocks = [message[i*block_size:(i+1)*block_size] for i in range(n)]
+    
+    if steps is not None:
+        for i, block in enumerate(blocks):
+            steps.append(f"  Block {i+1}: {binascii.hexlify(block).decode()}")
     
     # Process last block
     if flag:
         last_block = xor_bytes(blocks[-1], K1)
+        if steps is not None:
+            steps.append(f"\nStep 5: Last Block Processing (Complete)")
+            steps.append(f"  Last Block XOR K1 = {binascii.hexlify(last_block).decode()}")
     else:
         # Pad incomplete block with 10^*
         padded = blocks[-1] + b'\x80' + b'\x00' * (block_size - len(blocks[-1]) - 1)
         last_block = xor_bytes(padded, K2)
+        if steps is not None:
+            steps.append(f"\nStep 5: Last Block Processing (Incomplete)")
+            steps.append(f"  Padded Block: {binascii.hexlify(padded).decode()}")
+            steps.append(f"  Padded XOR K2 = {binascii.hexlify(last_block).decode()}")
     
     # CMAC computation
     X = bytes(block_size)
+    if steps is not None:
+        steps.append(f"\nStep 6: CMAC Computation")
+        steps.append(f"  Initial X: {binascii.hexlify(X).decode()}")
     
     for i in range(n - 1):
         Y = xor_bytes(X, blocks[i])
         X = cipher.encrypt(Y)
+        if steps is not None and n > 1:
+            steps.append(f"  Block {i+1}: X XOR Block = {binascii.hexlify(Y).decode()}")
+            steps.append(f"           AES Output  = {binascii.hexlify(X).decode()}")
     
     # Final block
     Y = xor_bytes(X, last_block)
     T = cipher.encrypt(Y)
+    if steps is not None:
+        steps.append(f"\nStep 7: Final Block Processing")
+        steps.append(f"  X XOR Last Block = {binascii.hexlify(Y).decode()}")
+        steps.append(f"  CMAC Tag         = {binascii.hexlify(T).decode()}")
     
     return T
 
@@ -962,23 +1009,39 @@ def api_cmac():
             key_bytes = key_bytes[:16]
         
         if operation == 'generate':
-            # Generate CMAC
-            cmac_tag = cmac_generate(key_bytes, message_bytes)
+            # Generate CMAC with intermediate steps
+            steps = []
+            steps.append(f"Input Message: {message}")
+            steps.append(f"Input Key: {key}")
+            steps.append(f"Message (hex): {binascii.hexlify(message_bytes).decode()}")
+            steps.append(f"Key (hex): {binascii.hexlify(key_bytes).decode()}")
+            steps.append("")
+            
+            cmac_tag = cmac_generate(key_bytes, message_bytes, steps)
             cmac_hex = binascii.hexlify(cmac_tag).decode('utf-8')
             
             return jsonify({
                 'success': True,
                 'cmac': cmac_hex,
-                'result': f'CMAC Generated Successfully\n\nMessage: {message}\nKey: {key}\nCMAC: {cmac_hex}'
+                'steps': steps,
+                'result': '\n'.join(steps)
             })
         else:
-            # For verification, we would need the original CMAC tag
-            cmac_tag = cmac_generate(key_bytes, message_bytes)
+            # For verification, generate and show intermediate steps
+            steps = []
+            steps.append(f"Input Message: {message}")
+            steps.append(f"Input Key: {key}")
+            steps.append(f"Message (hex): {binascii.hexlify(message_bytes).decode()}")
+            steps.append(f"Key (hex): {binascii.hexlify(key_bytes).decode()}")
+            steps.append("")
+            
+            cmac_tag = cmac_generate(key_bytes, message_bytes, steps)
             cmac_hex = binascii.hexlify(cmac_tag).decode('utf-8')
             
             return jsonify({
                 'success': True,
-                'result': f'CMAC Verification Complete\n\nExpected CMAC: {cmac_hex}\n\nTo verify, compare with the CMAC from the sender.'
+                'steps': steps,
+                'result': '\n'.join(steps)
             })
     
     except Exception as e:

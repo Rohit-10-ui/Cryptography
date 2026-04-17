@@ -579,8 +579,8 @@
 
             <div class="error" id="cmac_error"></div>
             <div class="result-section" id="cmac_result">
-                <div class="result-label" id="cmac_result_label">CMAC Output:</div>
-                <div class="result-text" id="cmac_result_text" style="font-family: monospace;"></div>
+                <div class="result-label" id="cmac_result_label">CMAC Intermediate Steps:</div>
+                <div class="result-text" id="cmac_result_text" style="font-family: monospace; white-space: pre-wrap; line-height: 1.6;"></div>
             </div>
         </div>
 
@@ -1100,8 +1100,8 @@
                 btn.disabled = false;
 
                 if (data.success) {
-                    resultLabel.textContent = 'CMAC Output:';
-                    resultText.textContent = `Message: ${message}\nKey: ${key}\nCMAC: ${data.cmac}`;
+                    resultLabel.textContent = 'CMAC Intermediate Steps:';
+                    resultText.textContent = data.result;
                     resultDiv.classList.add('show');
                 } else {
                     errorDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
@@ -1145,7 +1145,7 @@
                 btn.disabled = false;
 
                 if (data.success) {
-                    resultLabel.textContent = 'CMAC Verification:';
+                    resultLabel.textContent = 'CMAC Intermediate Steps:';
                     resultText.textContent = data.result;
                     resultDiv.classList.add('show');
                 } else {
